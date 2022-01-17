@@ -1,0 +1,18 @@
+{
+  "name": "virtual-scroll-table",
+  "version": "0.0.1",
+  "description": "电脑端,移动端的虚拟滚动表格 用以支持大数据",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "jquery": "^3.6.0",
+    "jquery.nicescroll": "^3.7.6",
+    "lodash": "^4.17.21",
+    "zh-utils1": "^0.0.1"
+  },
+  "devDependencies": {}
+}
