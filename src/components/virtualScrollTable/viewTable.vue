@@ -27,9 +27,9 @@
           <table class="vt-header-table">
             <colgroup>
               <col
-                v-for="(item, i) of calcLeaf(cols)"
+                v-for="(item, i) of colLeafs"
                 :key="i"
-                style="width: 100px"
+                :style="{width: item.width || '100px'}"
               />
             </colgroup>
             <tr v-for="(item, i) of centerLevelsArr" :key="i">
@@ -86,8 +86,9 @@ import utils from "zh-utils1";
 import _ from "lodash";
 import $ from "jquery";
 import "jquery.nicescroll";
-import tableHeader from "./virtualScrollTable/table-header";
-import tableBody from "./virtualScrollTable/table-body";
+import tableHeader from "./table-header";
+import tableBody from "./table-body";
+import { leafExtract } from './utils'
 
 // 单纯的计算指定属性的叶子节点数
 function calcLeafNum(cols, prop = "childs") {
@@ -163,6 +164,11 @@ export default {
       watchColsDtas: 0,  // 用于监听多个源cols datas
       datas: [],  // 用作展示的全数据
     };
+  },
+  computed: {
+    colLeafs() {
+      return leafExtract(this.cols)
+    }
   },
   watch: {
     cols: {

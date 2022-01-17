@@ -20,7 +20,7 @@ export default {
       <table class="vt-right-body-table">
         <colgroup>
           {
-            this.leafCols.map(col => (<col style={'width:' + this.colWidth + 'px'}></col>))
+            this.leafCols.map(col => (<col style={`width:${col.width || this.colWidth + 'px'}`}></col>))
           }
         </colgroup>
         <tbody class="vt-right-body-tbody">

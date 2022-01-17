@@ -1,7 +1,7 @@
 /**
  * 叶子提取
  */
- function leafExtract(arr, prop = "childs") {
+/*  function leafExtract(arr, prop = "childs") {
   let nArr = []
   arr.forEach(ele => {
     if (ele.isLeaf) {
@@ -11,14 +11,16 @@
     }
   })
   return nArr
-}
+} */
+import { leafExtract } from './utils'
+
 export default {
   render() {
     return (
       <table class="vt-header vt-header-table">
         <colgroup>
           {
-            this.leafCols.map(col => (<col style={'width:' + this.colWidth + 'px'}></col>))
+            this.colLeafs.map(col => (<col style={`width:${col.width || this.colWidth + 'px'}`}></col>))
           }
         </colgroup>
         {
@@ -40,7 +42,11 @@ export default {
   },
   data() {
     return {
-      leafCols: leafExtract(this.cols),
+    }
+  },
+  computed: {
+    colLeafs() {
+      return leafExtract(this.cols)
     }
   },
   watch: {
