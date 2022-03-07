@@ -16,3 +16,6 @@ rightFixedNum 右侧固定列数 默认0
 ### 待开发的功能
 导出表格
 首列复选框
+
+### 每行高度不统一虚拟滚动
+src\components\virtualScrollTable\virtualScrollTableDynamic.vue
