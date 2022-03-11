@@ -2,11 +2,13 @@
   <div id="app" style="height: 300px">
     <viewTable :cols="cols" :rows="datas" :options="tableOptions"></viewTable>
     <button @click="handleClickChangeColsDatas">变更列及数据</button>
+    <virtualScrollTableDynamic :cols="cols" :rows="datas" :options="tableOptions"></virtualScrollTableDynamic>
   </div>
 </template>
 
 <script>
 import viewTable from "./components/virtualScrollTable/viewTable.vue";
+import virtualScrollTableDynamic from "./components/virtualScrollTable/virtualScrollTableDynamic.vue";
 import HelloWorld from "./components/HelloWorld.vue";
 import _ from "lodash";
 
@@ -57,7 +59,7 @@ export default {
   },
   components: {
     viewTable,
-    // HelloWorld,
+    virtualScrollTableDynamic,
   },
   created() {
     // 操作列

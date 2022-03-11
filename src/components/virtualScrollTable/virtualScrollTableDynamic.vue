@@ -126,14 +126,6 @@ const defaultOptions = {
 };
 export default {
   setup(props) {
-    /* const { cols, datas } = toRefs(props);
-    watch(
-      [cols, datas],
-      () => {
-        this.addAction();
-      },
-      { immediate: true }
-    ); */
   },
   props: {
     cols: Array,
@@ -147,11 +139,16 @@ export default {
         };
       },
     },
+    // 预估行高
+    predictRowHeight: {
+      type: Number,
+      default: 20,
+    },
   },
   data() {
     return {
       colsDeep: utils.objArrDeep(this.cols),
-      shouldDatasHeight: 0, // 应该展示的全数据高度
+      shouldDatasHeight: 0, // 应该展示的全数据高度 会动态调整
       centerLevelsArr: [], // 中间级化数组
       leftFixedCols: [], // 左侧固定列
       rightFixedCols: [], // 右侧固定列
@@ -163,6 +160,9 @@ export default {
       centerCols: [], // 中间列们
       watchColsDtas: 0,  // 用于监听多个源cols datas
       datas: [],  // 用作展示的全数据
+      rowHeights: [],   // 存储每行高度
+      startIndex: 0,    // 渲染数据第一个索引
+      predictRenderCount: 0,  // 根据容器高预估高得到预估渲染数  首次渲染后的初始化中计算
     };
   },
   computed: {
@@ -218,6 +218,7 @@ export default {
       this.$nextTick(() => {$(this.$refs.centerScrollWrap).getNiceScroll().resize()})
     },
     refresh() {
+
       this.datas = this.genShouldShowDatas(this.rows)
       this.leftFixedCols = this.cols.slice(0, this.mOptions.leftFixedNum);
       this.rightFixedCols = this.mOptions.rightFixedNum && this.cols.slice(-this.mOptions.rightFixedNum) || [];
@@ -243,7 +244,13 @@ export default {
         (centerScrollWrap.scrollTop === 0) ? this.genRenderDatas(0) : centerScrollWrap.scrollTo({top:0,})
       }
       // 全高度计算
-      this.shouldDatasHeight = this.datas.length * 25,
+      this.shouldDatasHeight = this.datas.length * this.predictRowHeight,
+      this.rowHeights = this.datas.map((ele, i) => {
+        return {
+          height: this.predictRowHeight,
+          top: i * this.predictRowHeight
+        }
+      })
       this.$nextTick(() => {$(this.$refs.centerScrollWrap).getNiceScroll().resize()})
     },
     debounceAddAction: _.debounce(function () {
@@ -308,6 +315,9 @@ export default {
       this.$refs.rightScrollWrap.scrollTo({ top: scrollTop });
       this.$refs.centerScrollWrap.scrollTo({ top: scrollTop });
     }, 20),
+  },
+  updated() {
+
   },
 };
 </script>
