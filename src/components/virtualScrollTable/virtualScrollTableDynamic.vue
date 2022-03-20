@@ -1,5 +1,5 @@
 <template>
-  <div class="vt-view-table-wrap">
+  <div ref="virtualScrollWrap" class="vt-view-table-wrap">
     <div
       ref="leftScrollWrap"
       class="vt-fixed vt-left-fixed"
@@ -46,13 +46,25 @@
         </div>
       </div>
       <div :style="{ height: shouldDatasHeight + 'px' }">
-        <tableBody
-          :cols="cols"
-          :datas="renderDatas"
-          :style="{ top: tableTop }"
-          :colWidth="mOptions.colWidth"
-          @clickExtend="handleClickExtend"
-        ></tableBody>
+        <table class="vt-right-body-table">
+          <colgroup>
+            <col
+              v-for="(item, i) of colLeafs"
+              :key="i"
+              :style="{width: item.width || '100px'}"
+            />
+          </colgroup>
+          <tbody class="vt-right-body-tbody">
+            <tr ref="trs" v-for="(item, i) of renderDatas" :key="i">
+              <td v-for="(col, i1) of colLeafs" :key="i1">
+                <div>
+                  <span v-show="i1 === 0 && item.childs && item.childs.length">{{item.isExtend ? '-' : '+'}}</span>
+                  {{col.cellRender && col.cellRender(item) || col.formatter && col.formatter(item[col.prop]) || item[col.prop]}}
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
       <!-- <div class="vt-scroll-horizontal">
         <div class="vt-scroll-horizontal-bar" @mousedown="handle"></div>
@@ -88,7 +100,7 @@ import $ from "jquery";
 import "jquery.nicescroll";
 import tableHeader from "./table-header";
 import tableBody from "./table-body";
-import { leafExtract } from './utils'
+import { leafExtract } from "./utils";
 
 // 单纯的计算指定属性的叶子节点数
 function calcLeafNum(cols, prop = "childs") {
@@ -122,10 +134,16 @@ function calcLeaf(cols, level) {
 const defaultOptions = {
   trHeight: 25,
   colWidth: 100,
-  leftFixedNum: 0,  // 左侧固定列数
+  leftFixedNum: 0, // 左侧固定列数
 };
 export default {
-  setup(props) {
+  setup(props) {},
+  render() {
+    return (
+      <div>
+        jsx格式的渲染函数
+      </div>
+    )
   },
   props: {
     cols: Array,
@@ -154,39 +172,39 @@ export default {
       rightFixedCols: [], // 右侧固定列
       leftLevelsArr: [], // 左侧头级化
       rightLevelsArr: [], // 右侧头级化
-      renderDatas: [], // 需要渲染的数据
+      renderDatas: [], // 需要渲染的数据,也就是可视区的
       tableTop: 0, // 用于可视化的表格上方偏移 同时用于整合三块滚动
       mOptions: Object.assign({}, defaultOptions, this.options), // 最终的选项
       centerCols: [], // 中间列们
-      watchColsDtas: 0,  // 用于监听多个源cols datas
-      datas: [],  // 用作展示的全数据
-      rowHeights: [],   // 存储每行高度
-      startIndex: 0,    // 渲染数据第一个索引
-      predictRenderCount: 0,  // 根据容器高预估高得到预估渲染数  首次渲染后的初始化中计算
+      watchColsDtas: 0, // 用于监听多个源cols datas
+      datas: [], // 用作展示的全数据
+      rowHeights: [], // 存储每行高度
+      startIndex: 0, // 渲染数据第一个索引
+      predictRenderCount: 0, // 根据容器高预估高得到预估渲染数  首次渲染后的初始化中计算
     };
   },
   computed: {
     colLeafs() {
-      return leafExtract(this.cols)
-    }
+      return leafExtract(this.cols);
+    },
   },
   watch: {
     cols: {
       // immediate: true,
       handler() {
-        this.watchColsDtas++
+        this.watchColsDtas++;
       },
     },
     rows: {
       // immediate: true,
       handler() {
-        this.watchColsDtas++
+        this.watchColsDtas++;
       },
     },
     watchColsDtas: {
       immediate: true,
       handler() {
-        this.addAction()
+        this.addAction();
       },
     },
   },
@@ -199,29 +217,61 @@ export default {
     // this.refresh()
   },
   mounted() {
-    this.genRenderDatas(0);
-    $(this.$refs.centerScrollWrap).niceScroll();
+    // 挂载后初始化
+    this.mountedInit();
+    // $(this.$refs.centerScrollWrap).niceScroll();
+  },
+  updated() {
+    let sum = 0
+    const len = this.$refs.trs.length
+    this.$refs.trs.forEach((ele, i) => {
+      const dec = ele.offsetHeight - this.rowHeights[this.startIndex + i].height
+      this.rowHeights[this.startIndex + i].top + sum
+      sum += ele.offsetHeight - this.rowHeights[this.startIndex + i].height
+      this.rowHeights[this.startIndex + i].height = ele.offsetHeight
+    })
+    this.rowHeights.splice(this.startIndex + len).forEach(rowHeight => rowHeight.top + sum)
+    this.shouldDatasHeight += sum
   },
   methods: {
+    mountedInit() {
+      // 首次计算预估全高度
+      this.shouldDatasHeight = this.datas.length * this.predictRowHeight
+      // 计算预估的渲染条数
+      this.predictRenderCount = Math.ceil(
+        this.$refs.virtualScrollWrap.offsetHeight / this.predictRowHeight
+      );
+      this.rowHeights = this.datas.map((ele, i) => {
+        return {
+          height: this.predictRowHeight,
+          top: i * this.predictRowHeight,
+        };
+      });
+      this.genRenderDatas();
+    },
     handleClickExtend(row) {
-      row.isExtend = !row.isExtend
-      this.extendRefresh()
+      row.isExtend = !row.isExtend;
+      this.extendRefresh();
     },
     // 扩展与否变更的刷新
     extendRefresh() {
-      this.datas = this.genShouldShowDatas(this.rows)
+      this.datas = this.genShouldShowDatas(this.rows);
       // 是否首次
-      const centerScrollWrap = this.$refs.centerScrollWrap
+      const centerScrollWrap = this.$refs.centerScrollWrap;
       // 全高度计算
-      this.shouldDatasHeight = this.datas.length * 25,
-      this.genRenderDatas(centerScrollWrap.scrollTop)
-      this.$nextTick(() => {$(this.$refs.centerScrollWrap).getNiceScroll().resize()})
+      (this.shouldDatasHeight = this.datas.length * 25),
+        this.genRenderDatas(centerScrollWrap.scrollTop);
+      this.$nextTick(() => {
+        $(this.$refs.centerScrollWrap).getNiceScroll().resize();
+      });
     },
     refresh() {
-
-      this.datas = this.genShouldShowDatas(this.rows)
+      this.datas = this.genShouldShowDatas(this.rows);
       this.leftFixedCols = this.cols.slice(0, this.mOptions.leftFixedNum);
-      this.rightFixedCols = this.mOptions.rightFixedNum && this.cols.slice(-this.mOptions.rightFixedNum) || [];
+      this.rightFixedCols =
+        (this.mOptions.rightFixedNum &&
+          this.cols.slice(-this.mOptions.rightFixedNum)) ||
+        [];
       this.centerCols = this.cols.slice(
         this.mOptions.leftFixedNum,
         this.options.rightFixedNum ? -this.options.rightFixedNum : undefined
@@ -239,19 +289,23 @@ export default {
         this.rightLevelsArr.push([])
       );
       // 是否首次
-      const centerScrollWrap = this.$refs.centerScrollWrap
+      const centerScrollWrap = this.$refs.centerScrollWrap;
       if (centerScrollWrap) {
-        (centerScrollWrap.scrollTop === 0) ? this.genRenderDatas(0) : centerScrollWrap.scrollTo({top:0,})
+        centerScrollWrap.scrollTop === 0
+          ? this.genRenderDatas(0)
+          : centerScrollWrap.scrollTo({ top: 0 });
       }
       // 全高度计算
-      this.shouldDatasHeight = this.datas.length * this.predictRowHeight,
-      this.rowHeights = this.datas.map((ele, i) => {
-        return {
-          height: this.predictRowHeight,
-          top: i * this.predictRowHeight
-        }
-      })
-      this.$nextTick(() => {$(this.$refs.centerScrollWrap).getNiceScroll().resize()})
+      (this.shouldDatasHeight = this.datas.length * this.predictRowHeight),
+        (this.rowHeights = this.datas.map((ele, i) => {
+          return {
+            height: this.predictRowHeight,
+            top: i * this.predictRowHeight,
+          };
+        }));
+      this.$nextTick(() => {
+        $(this.$refs.centerScrollWrap).getNiceScroll().resize();
+      });
     },
     debounceAddAction: _.debounce(function () {
       this.addAction();
@@ -262,17 +316,19 @@ export default {
       // 对列添加一些行为属性
       this.perfectCols(this.cols, 1);
       // 考虑树形 应该展示的全数据
-      this.refresh()
+      this.refresh();
     },
     genShouldShowDatas(datas) {
-      let shouldShowDatas = []
-      datas.forEach(data => {
-        shouldShowDatas.push(data)
+      let shouldShowDatas = [];
+      datas.forEach((data) => {
+        shouldShowDatas.push(data);
         if (data.childs && data.childs.length && data.isExtend) {
-          shouldShowDatas = shouldShowDatas.concat(this.genShouldShowDatas(data.childs))
+          shouldShowDatas = shouldShowDatas.concat(
+            this.genShouldShowDatas(data.childs)
+          );
         }
-      })
-      return shouldShowDatas
+      });
+      return shouldShowDatas;
     },
     perfectCols(cols, level) {
       let colsLeafNum = 0;
@@ -294,30 +350,22 @@ export default {
     calcLeaf(cols) {
       return cols.reduce((acc, col) => (acc += col.leafNum), 0);
     },
-    genRenderDatas(scrollTop) {
-      const trHeight = this.mOptions.trHeight;
-      const renderNum =
-        Math.ceil(this.$el.clientHeight / this.mOptions.trHeight) + 2;
-      const noRenderNumTop = Math.floor(scrollTop / this.mOptions.trHeight); // 上方不渲染数
+    genRenderDatas() {
       this.renderDatas = this.datas.slice(
-        noRenderNumTop,
-        noRenderNumTop + renderNum
+        this.startIndex,
+        this.predictRenderCount
       );
-      this.tableTop = noRenderNumTop * trHeight + "px";
     },
     handleScroll: _.throttle(function (e) {
       const scrollTop = e.target.scrollTop;
       // 联动触发的滚动就不需要再处理了
-      if (this.tableTop === scrollTop) return
-      this.tableTop = scrollTop
+      if (this.tableTop === scrollTop) return;
+      this.tableTop = scrollTop;
       this.genRenderDatas(e.target.scrollTop);
       this.$refs.leftScrollWrap.scrollTo({ top: scrollTop });
       this.$refs.rightScrollWrap.scrollTo({ top: scrollTop });
       this.$refs.centerScrollWrap.scrollTo({ top: scrollTop });
     }, 20),
-  },
-  updated() {
-
   },
 };
 </script>
@@ -398,7 +446,7 @@ export default {
 }
 .vt-td-div {
   height: 23px;
-  width: v-bind(mOptions.colWidth - 2 + 'px');
+  width: v-bind(mOptions.colWidth - 2 + "px");
 }
 .vt-scroll-horizontal {
   position: absolute;
