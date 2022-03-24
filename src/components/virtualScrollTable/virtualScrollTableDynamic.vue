@@ -46,7 +46,7 @@
         </div>
       </div>
       <div :style="{ height: shouldDatasHeight + 'px' }">
-        <table class="vt-right-body-table">
+        <table class="vt-right-body-table" :style="{ top: renderContentTop + 'px' }">
           <colgroup>
             <col
               v-for="(item, i) of colLeafs"
@@ -60,7 +60,7 @@
                 <div>
                   <span v-show="i1 === 0 && item.childs && item.childs.length">{{item.isExtend ? '-' : '+'}}</span>
                   <!-- {{col.cellRender && col.cellRender(item) || col.formatter && col.formatter(item[col.prop]) || item[col.prop]}} -->
-                  {{ col.formatter && col.formatter(item[col.prop]) || item[col.prop]}}
+                  <pre>{{ col.formatter && col.formatter(item[col.prop]) || item[col.prop]}}</pre>
                 </div>
               </td>
             </tr>
@@ -154,7 +154,7 @@ export default {
       default() {
         return {
           // leftFixedNum: 1,
-          rightFixedNum: 1,
+          rightFixedNum: 0,
         };
       },
     },
@@ -182,6 +182,7 @@ export default {
       rowHeights: [], // 存储每行高度
       startIndex: 0, // 渲染数据第一个索引
       predictRenderCount: 0, // 根据容器高预估高得到预估渲染数  首次渲染后的初始化中计算
+      renderContentTop: 0,  // 渲染出的内容上偏移
     };
   },
   computed: {
@@ -220,18 +221,21 @@ export default {
   mounted() {
     // 挂载后初始化
     this.mountedInit();
-    // $(this.$refs.centerScrollWrap).niceScroll();
   },
   updated() {
+    console.log('更新后钩子this.rowHeights', this.rowHeights)
     let sum = 0
     const len = this.$refs.trs.length
     this.$refs.trs.forEach((ele, i) => {
+      console.log('更新后收集到的高度this.startIndex + i', this.startIndex + i, ele.offsetHeight)
       const dec = ele.offsetHeight - this.rowHeights[this.startIndex + i].height
-      this.rowHeights[this.startIndex + i].top + sum
-      sum += ele.offsetHeight - this.rowHeights[this.startIndex + i].height
-      this.rowHeights[this.startIndex + i].height = ele.offsetHeight
+      if (dec !== 0) {
+        sum += dec
+        this.rowHeights[this.startIndex + i + 1].top += sum
+        this.rowHeights[this.startIndex + i].height = ele.offsetHeight
+      }
     })
-    this.rowHeights.splice(this.startIndex + len).forEach(rowHeight => rowHeight.top + sum)
+    this.rowHeights.slice(this.startIndex + len + 1).forEach(rowHeight => rowHeight.top += sum)
     this.shouldDatasHeight += sum
   },
   methods: {
@@ -240,7 +244,7 @@ export default {
       this.shouldDatasHeight = this.datas.length * this.predictRowHeight
       // 计算预估的渲染条数
       this.predictRenderCount = Math.ceil(
-        this.$refs.virtualScrollWrap.offsetHeight / this.predictRowHeight
+        this.$refs.virtualScrollWrap.clientHeight / this.predictRowHeight
       );
       this.rowHeights = this.datas.map((ele, i) => {
         return {
@@ -249,6 +253,8 @@ export default {
         };
       });
       this.genRenderDatas();
+      // 挂载后dom层面容器宽高确定,添加滚动条
+      $(this.$refs.centerScrollWrap).niceScroll();
     },
     handleClickExtend(row) {
       row.isExtend = !row.isExtend;
@@ -354,24 +360,36 @@ export default {
     genRenderDatas() {
       this.renderDatas = this.datas.slice(
         this.startIndex,
-        this.predictRenderCount
+        this.startIndex + this.predictRenderCount
       );
+      console.log('生成的用于渲染到视图的数据',this.datas.length, this.renderDatas.length)
+      this.renderContentTop = this.rowHeights[this.startIndex].top
     },
     handleScroll: _.throttle(function (e) {
       const scrollTop = e.target.scrollTop;
       // 联动触发的滚动就不需要再处理了
       if (this.tableTop === scrollTop) return;
       this.tableTop = scrollTop;
-      this.$refs.leftScrollWrap.scrollTo({ top: scrollTop });
-      this.$refs.rightScrollWrap.scrollTo({ top: scrollTop });
-      this.$refs.centerScrollWrap.scrollTo({ top: scrollTop });
+      // this.$refs.leftScrollWrap.scrollTo({ top: scrollTop });
+      // this.$refs.rightScrollWrap.scrollTo({ top: scrollTop });
+      // this.$refs.centerScrollWrap.scrollTo({ top: scrollTop });
       // 计算出开始索引
-
-      this.genRenderDatas(e.target.scrollTop);
+      this.startIndex = this.twoSplit(scrollTop, this.rowHeights.map(ele => ele.top))
+      console.log('滚动事件top计算出的开始索引', scrollTop, this.startIndex)
+      this.genRenderDatas();
     }, 20),
     // 二分查找 左偏
     twoSplit(num, nums) {
-      let l = 0, r = nums.length - 1, mid = (l + r) / 2
+      let l = 0, r = nums.length - 1, mid = Math.floor((l + r) / 2)
+      while (l < r) {
+        if (num < nums[mid]) {
+          r = mid
+        } else {
+          l = mid + 1
+        }
+        mid = Math.floor((l + r) / 2)
+      }
+      return mid - 1
     },
   },
 };
@@ -428,14 +446,11 @@ export default {
 .vt-view-table {
   /* display: flex;
   flex-direction: column; */
-  /* border: 1px solid #888; */
+  border: 1px solid #888;
   overflow: auto;
   box-sizing: border-box;
   flex-grow: 1;
   position: relative;
-}
-.vt-view-table::-webkit-scrollbar {
-  display: none;
 }
 .vt-header {
   z-index: 1;

@@ -2,7 +2,7 @@
   <div id="app" style="height: 300px">
     <viewTable :cols="cols" :rows="datas" :options="tableOptions"></viewTable>
     <button @click="handleClickChangeColsDatas">变更列及数据</button>
-    <virtualScrollTableDynamic :cols="cols" :rows="datas" :options="tableOptions"></virtualScrollTableDynamic>
+    <virtualScrollTableDynamic :cols="colsB" :rows="datasB"></virtualScrollTableDynamic>
   </div>
 </template>
 
@@ -46,6 +46,31 @@ let datas = _.times(10000, (time) => {
   return obj;
 });
 
+// 高度不统一的数据
+const colsB = [
+  {
+    label: '列0',
+    prop: '0'
+  },
+  {
+    label: '列1',
+    prop: '1'
+  },
+  {
+    label: '列2',
+    prop: '2'
+  },
+]
+const datasB = _.times(10000, (time) => {
+  let obj = {
+    0: time,
+    1: 1,
+    2: (time % 2) === 0 ? '1' : `1\n2`,
+  };
+  
+  return obj;
+});
+
 export default {
   name: "App",
   data() {
@@ -55,6 +80,8 @@ export default {
       tableOptions: {
         leftFixedNum: 1,
       },
+      colsB,
+      datasB
     };
   },
   components: {
