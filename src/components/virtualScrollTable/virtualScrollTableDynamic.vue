@@ -59,7 +59,8 @@
               <td v-for="(col, i1) of colLeafs" :key="i1">
                 <div>
                   <span v-show="i1 === 0 && item.childs && item.childs.length">{{item.isExtend ? '-' : '+'}}</span>
-                  {{col.cellRender && col.cellRender(item) || col.formatter && col.formatter(item[col.prop]) || item[col.prop]}}
+                  <!-- {{col.cellRender && col.cellRender(item) || col.formatter && col.formatter(item[col.prop]) || item[col.prop]}} -->
+                  {{ col.formatter && col.formatter(item[col.prop]) || item[col.prop]}}
                 </div>
               </td>
             </tr>
@@ -361,11 +362,17 @@ export default {
       // 联动触发的滚动就不需要再处理了
       if (this.tableTop === scrollTop) return;
       this.tableTop = scrollTop;
-      this.genRenderDatas(e.target.scrollTop);
       this.$refs.leftScrollWrap.scrollTo({ top: scrollTop });
       this.$refs.rightScrollWrap.scrollTo({ top: scrollTop });
       this.$refs.centerScrollWrap.scrollTo({ top: scrollTop });
+      // 计算出开始索引
+
+      this.genRenderDatas(e.target.scrollTop);
     }, 20),
+    // 二分查找 左偏
+    twoSplit(num, nums) {
+      let l = 0, r = nums.length - 1, mid = (l + r) / 2
+    },
   },
 };
 </script>
