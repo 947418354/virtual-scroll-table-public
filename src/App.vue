@@ -65,6 +65,7 @@ const datasB = _.times(10000, (time) => {
   let obj = {
     0: time,
     1: 1,
+    // 2: (time % 2) === 0 ? '1' : `1`,
     2: (time % 2) === 0 ? '1' : `1\n2`,
   };
   

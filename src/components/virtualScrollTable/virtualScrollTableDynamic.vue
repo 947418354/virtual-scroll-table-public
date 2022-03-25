@@ -1,5 +1,5 @@
 <template>
-  <div ref="virtualScrollWrap" class="vt-view-table-wrap">
+  <div ref="virtualScrollWrap" class="vt-view-tableD-wrap">
     <div
       ref="leftScrollWrap"
       class="vt-fixed vt-left-fixed"
@@ -21,7 +21,7 @@
         ></tableBody>
       </div>
     </div>
-    <div ref="centerScrollWrap" class="vt-view-table" @scroll="handleScroll">
+    <div ref="centerScrollWrap" class="vt-view-tableD" @scroll="handleScroll">
       <div class="vt-header">
         <div>
           <table class="vt-header-table">
@@ -209,6 +209,7 @@ export default {
         this.addAction();
       },
     },
+    
   },
   components: {
     tableHeader,
@@ -227,16 +228,17 @@ export default {
     let sum = 0
     const len = this.$refs.trs.length
     this.$refs.trs.forEach((ele, i) => {
-      console.log('更新后收集到的高度this.startIndex + i', this.startIndex + i, ele.offsetHeight)
       const dec = ele.offsetHeight - this.rowHeights[this.startIndex + i].height
       if (dec !== 0) {
         sum += dec
-        this.rowHeights[this.startIndex + i + 1].top += sum
+        if (this.rowHeights[this.startIndex + i + 1]) this.rowHeights[this.startIndex + i + 1].top += sum
         this.rowHeights[this.startIndex + i].height = ele.offsetHeight
       }
     })
     this.rowHeights.slice(this.startIndex + len + 1).forEach(rowHeight => rowHeight.top += sum)
     this.shouldDatasHeight += sum
+    // 滚动区元素高度变化触发的更新,进行滚动条重设
+    if (sum === 0) $(this.$refs.centerScrollWrap).getNiceScroll().resize();
   },
   methods: {
     mountedInit() {
@@ -268,9 +270,7 @@ export default {
       // 全高度计算
       (this.shouldDatasHeight = this.datas.length * 25),
         this.genRenderDatas(centerScrollWrap.scrollTop);
-      this.$nextTick(() => {
-        $(this.$refs.centerScrollWrap).getNiceScroll().resize();
-      });
+      
     },
     refresh() {
       this.datas = this.genShouldShowDatas(this.rows);
@@ -302,14 +302,6 @@ export default {
           ? this.genRenderDatas(0)
           : centerScrollWrap.scrollTo({ top: 0 });
       }
-      // 全高度计算
-      (this.shouldDatasHeight = this.datas.length * this.predictRowHeight),
-        (this.rowHeights = this.datas.map((ele, i) => {
-          return {
-            height: this.predictRowHeight,
-            top: i * this.predictRowHeight,
-          };
-        }));
       this.$nextTick(() => {
         $(this.$refs.centerScrollWrap).getNiceScroll().resize();
       });
@@ -362,8 +354,10 @@ export default {
         this.startIndex,
         this.startIndex + this.predictRenderCount
       );
-      console.log('生成的用于渲染到视图的数据',this.datas.length, this.renderDatas.length)
-      this.renderContentTop = this.rowHeights[this.startIndex].top
+      this.renderContentTop = this.rowHeights.slice(0, this.startIndex).reduce((sum, ele) => {
+        return sum + ele.height
+      }, 0)
+      // this.renderContentTop = this.rowHeights[this.startIndex].top
     },
     handleScroll: _.throttle(function (e) {
       const scrollTop = e.target.scrollTop;
@@ -374,10 +368,20 @@ export default {
       // this.$refs.rightScrollWrap.scrollTo({ top: scrollTop });
       // this.$refs.centerScrollWrap.scrollTo({ top: scrollTop });
       // 计算出开始索引
-      this.startIndex = this.twoSplit(scrollTop, this.rowHeights.map(ele => ele.top))
-      console.log('滚动事件top计算出的开始索引', scrollTop, this.startIndex)
+      // this.startIndex = this.twoSplit(scrollTop, this.rowHeights.map(ele => ele.top))
+      this.startIndex = this.addStart(scrollTop, this.rowHeights.map(ele => ele.height))
       this.genRenderDatas();
     }, 20),
+    // 累加法寻找开始索引
+    addStart(num, nums) {
+      let sum = 0
+      for (let i = 0; i < nums.length; i++) {
+        sum += nums[i]
+        if (sum > num) { 
+          return i
+        }
+      }
+    },
     // 二分查找 左偏
     twoSplit(num, nums) {
       let l = 0, r = nums.length - 1, mid = Math.floor((l + r) / 2)
@@ -396,24 +400,24 @@ export default {
 </script>
 
 <style>
-.vt-view-table-wrap {
+.vt-view-tableD-wrap {
   display: flex;
   height: 100%;
   position: relative;
 }
-.vt-view-table-wrap table {
+.vt-view-tableD-wrap table {
   border-spacing: 0;
   width: max-content;
   position: relative;
 }
-.vt-view-table-wrap tr {
+.vt-view-tableD-wrap tr {
   height: 25px;
   background-color: #fff;
 }
-.vt-view-table-wrap th {
+.vt-view-tableD-wrap th {
   border: 1px solid #00f;
 }
-.vt-view-table-wrap td {
+.vt-view-tableD-wrap td {
   border: 1px solid #00f;
 }
 .vt-fixed {
@@ -443,7 +447,7 @@ export default {
 .vt-right-fixed::-webkit-scrollbar {
   display: none;
 }
-.vt-view-table {
+.vt-view-tableD {
   /* display: flex;
   flex-direction: column; */
   border: 1px solid #888;
@@ -451,6 +455,9 @@ export default {
   box-sizing: border-box;
   flex-grow: 1;
   position: relative;
+}
+.vt-view-tableD::-webkit-scrollbar {
+  display: none;
 }
 .vt-header {
   z-index: 1;
