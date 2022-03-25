@@ -57,9 +57,12 @@
           <tbody class="vt-right-body-tbody">
             <tr ref="trs" v-for="(item, i) of renderDatas" :key="i">
               <td v-for="(col, i1) of colLeafs" :key="i1">
-                <div>
+                <!-- 是否需要自定义渲染 -->
+                <template v-if="col.cellRender">
+                  <renderFun :vNode="col.cellRender(item)"></renderFun>
+                </template>
+                <div v-else>
                   <span v-show="i1 === 0 && item.childs && item.childs.length">{{item.isExtend ? '-' : '+'}}</span>
-                  <!-- {{col.cellRender && col.cellRender(item) || col.formatter && col.formatter(item[col.prop]) || item[col.prop]}} -->
                   <pre>{{ col.formatter && col.formatter(item[col.prop]) || item[col.prop]}}</pre>
                 </div>
               </td>
@@ -102,6 +105,7 @@ import "jquery.nicescroll";
 import tableHeader from "./table-header";
 import tableBody from "./table-body";
 import { leafExtract } from "./utils";
+import renderFun from './components/renderFun'
 
 // 单纯的计算指定属性的叶子节点数
 function calcLeafNum(cols, prop = "childs") {
@@ -214,6 +218,7 @@ export default {
   components: {
     tableHeader,
     tableBody,
+    renderFun,
   },
   created() {
     // calcLeaf(this.cols, 1);

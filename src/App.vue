@@ -2,7 +2,10 @@
   <div id="app" style="height: 300px">
     <viewTable :cols="cols" :rows="datas" :options="tableOptions"></viewTable>
     <button @click="handleClickChangeColsDatas">变更列及数据</button>
-    <virtualScrollTableDynamic :cols="colsB" :rows="datasB"></virtualScrollTableDynamic>
+    <virtualScrollTableDynamic
+      :cols="colsB"
+      :rows="datasB"
+    ></virtualScrollTableDynamic>
   </div>
 </template>
 
@@ -17,7 +20,7 @@ let cols = _.times(colNum, (time) => ({
   label: `列名${time}`,
   prop: `prop${time}`,
   formatter: (cellValue) => cellValue + "suffix",
-  width: '150px',
+  width: "150px",
 }));
 // 在1号位插入一个多级列
 cols.splice(1, 0, {
@@ -38,43 +41,51 @@ let datas = _.times(10000, (time) => {
   _.times(colNum, (time) => (obj["prop" + time] = `属性${time}值`));
   obj.c1 = "c1值";
   obj.c2 = "c2值";
-  obj.isExtend = true
-  obj.childs = [
-    {c1: 'c11'},
-    {c1: 'c12'},
-  ]
+  obj.isExtend = true;
+  obj.childs = [{ c1: "c11" }, { c1: "c12" }];
   return obj;
 });
-
-// 高度不统一的数据
-const colsB = [
-  {
-    label: '列0',
-    prop: '0'
-  },
-  {
-    label: '列1',
-    prop: '1'
-  },
-  {
-    label: '列2',
-    prop: '2'
-  },
-]
 const datasB = _.times(10000, (time) => {
   let obj = {
     0: time,
     1: 1,
     // 2: (time % 2) === 0 ? '1' : `1`,
-    2: (time % 2) === 0 ? '1' : `1\n2`,
+    2: time % 2 === 0 ? "1" : `1\n2`,
   };
-  
+
   return obj;
 });
 
 export default {
   name: "App",
   data() {
+    // 高度不统一的数据
+    const colsB = [
+      {
+        label: "列0",
+        prop: "0",
+      },
+      {
+        label: "列1",
+        prop: "1",
+      },
+      {
+        label: "列2",
+        prop: "2",
+      },
+      {
+        label: "3号列 自定义",
+        prop: "3",
+        cellRender: (row)=> {
+          return <button onClick={() => {
+            console.log('12')
+            console.log(this)
+            this.handleSee(row);
+          }}>查看</button>;
+        },
+      },
+    ];
+
     return {
       cols,
       datas,
@@ -82,7 +93,7 @@ export default {
         leftFixedNum: 1,
       },
       colsB,
-      datasB
+      datasB,
     };
   },
   components: {
@@ -117,6 +128,10 @@ export default {
     });
   },
   methods: {
+    // 查看某一条目
+    handleSee(row) {
+      console.log("查看某一条目", row);
+    },
     handleClick(e) {
       console.log("点击事件", e);
     },
@@ -125,7 +140,7 @@ export default {
         label: `列名${time}`,
         prop: `prop${time}`,
       }));
-      this.datas = this.genDatas(this.cols)
+      this.datas = this.genDatas(this.cols);
     },
     /**
      * 功能性函数
