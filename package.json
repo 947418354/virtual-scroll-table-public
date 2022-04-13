@@ -1,18 +1,18 @@
 {
   "name": "virtual-scroll-table",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.0.4",
+  "private": false,
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build"
   },
   "dependencies": {
     "core-js": "^3.6.5",
-    "register-service-worker": "^1.7.1",
-    "vue": "^3.0.0",
     "jquery": "^3.6.0",
     "jquery.nicescroll": "^3.7.6",
     "lodash": "^4.17.21",
+    "register-service-worker": "^1.7.1",
+    "vue": "^3.0.0",
     "zh-utils1": "^0.0.2"
   },
   "devDependencies": {
@@ -21,7 +21,10 @@
     "@vue/cli-service": "~4.5.0",
     "@vue/compiler-sfc": "^3.0.0",
     "less": "^3.0.4",
-    "less-loader": "^5.0.0"
+    "less-loader": "^5.0.0",
+    "style-loader": "^3.3.1",
+    "vue-loader": "^17.0.0",
+    "vue-loader-v16": "^16.0.0-beta.5.4"
   },
   "browserslist": [
     "> 1%",
